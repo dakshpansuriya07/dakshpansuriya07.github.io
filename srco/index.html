@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Daksh Pansuriya · full-stack video editor</title>
+<meta name="description" content="Daksh Pansuriya, full-stack video editor: editing, motion graphics, 3D and sound.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --brand: #1f7a3d; --brand-dark: #175c2e; --brand-light: #2aa34c; --tint: #e9f3ec;
+    --ink: #0a0a0a; --muted: #6b6b6b; --line: #e2e2de; --paper: #f7f7f5; --bg: #ffffff;
+    --night: #070b09;
+    --sans: "Manrope", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+  body { overflow-x: hidden; }
+  a { color: inherit; }
+
+  /* the world is fixed; the page only provides scroll distance */
+  #stage { position: fixed; inset: 0; overflow: hidden; background: var(--paper); }
+  /* everything in the world lives in one layer that the camera moves on the GPU */
+  #cam { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; }
+  #cam > svg, #cam > #dark { position: absolute; overflow: visible; }
+  #screens { position: absolute; left: 0; top: 0; pointer-events: none; }
+  #mid, #fx { pointer-events: none; }
+  #world a, #world .plq { cursor: pointer; outline: none; }
+  #world .kface { stroke-width: 6; transition: stroke .2s; }
+  #world #insta:hover .kface, #world #insta:focus-visible .kface { stroke: #2aa34c; }
+  #world .chipbg, #world .ic-copy rect { transition: fill .2s, stroke .2s; }
+  #world .plq:hover .chipbg, #world .plq:focus-visible .chipbg, #world .plq.done .chipbg { fill: #2aa34c; }
+  #world .plq:hover .ic-copy rect, #world .plq:focus-visible .ic-copy rect { fill: #2aa34c; stroke: #ffffff; }
+  #world .plq .ic-done, #world .plq.done .ic-copy { display: none; }
+  #world .plq.done .ic-done { display: inline; }
+  #screens .scr { position: absolute; left: 0; top: 0; transform-origin: 0 0; background: #111; cursor: pointer; pointer-events: auto; display: none; }
+  #screens .scr video { display: block; width: 100%; height: 100%; object-fit: cover; }
+  #screens .scr { transition: box-shadow .25s; }
+  #screens .scr:hover { box-shadow: 0 0 0 6px #2aa34c; }
+  #screens .scr::after { content: "Watch ▶"; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font: 700 26px var(--sans); color: #fff; background: rgba(10,20,14,.72); padding: 14px 22px; border-radius: 999px; opacity: 0; transition: opacity .25s; pointer-events: none; white-space: nowrap; }
+  #screens .scr:hover::after { opacity: 1; }
+  #dark { background: var(--night); pointer-events: none; }
+  /* the track only provides scroll height; clicks pass through it to the world */
+  #track { position: relative; z-index: 0; pointer-events: none; }
+  #toast { position: fixed; left: 50%; bottom: 28px; z-index: 50; transform: translate(-50%, 12px); background: var(--ink); color: #fff; font: 600 14px var(--sans); padding: 10px 16px; border-radius: 999px; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; }
+  #toast.on { opacity: 1; transform: translate(-50%, 0); }
+
+  /* chrome */
+  header { position: fixed; top: 0; left: 0; right: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; padding: 18px clamp(16px, 3vw, 32px); pointer-events: none; }
+  header > * { pointer-events: auto; }
+  .who { font-weight: 800; font-size: 14px; letter-spacing: -0.01em; text-decoration: none; background: rgba(255,255,255,.86); backdrop-filter: blur(8px); border: 1px solid var(--line); border-radius: 999px; padding: 8px 14px; }
+  .who span { font-weight: 600; color: var(--muted); margin-left: 8px; }
+  nav { display: flex; gap: 6px; }
+  nav button { font: 600 13px var(--sans); border: 1px solid var(--line); background: rgba(255,255,255,.86); backdrop-filter: blur(8px); color: var(--ink); padding: 8px 13px; border-radius: 999px; cursor: pointer; }
+  nav button:hover { border-color: var(--ink); }
+  body.night header { color: #e9f3ec; }
+  body.night .who { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.16); }
+  body.night .who span { color: #7fa48c; }
+  body.night nav button { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.16); color: #e9f3ec; }
+
+  /* intro text */
+  #hero { position: fixed; left: clamp(18px, 4vw, 56px); bottom: clamp(70px, 9vh, 110px); z-index: 15; max-width: 640px; pointer-events: none; }
+  #hero .k { font: 500 12px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--brand-light); margin-bottom: 14px; }
+  #hero h1 { margin: 0; font-size: clamp(30px, 4.6vw, 58px); line-height: 1.02; letter-spacing: -0.035em; font-weight: 800; }
+  #hero p { margin: 16px 0 0; font-size: clamp(15px, 1.4vw, 18px); line-height: 1.5; color: var(--muted); max-width: 46ch; }
+  body.night #hero h1 { color: #f2f7f3; }
+  body.night #hero p { color: #9db8a6; }
+  #hint { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 15; font: 500 12px var(--mono); color: var(--muted); display: flex; align-items: center; gap: 8px; pointer-events: none; }
+  #hint i { width: 1px; height: 26px; background: currentColor; display: block; animation: drip 1.6s ease-in-out infinite; transform-origin: top; }
+  @keyframes drip { 0% { transform: scaleY(0); } 50% { transform: scaleY(1); } 100% { transform: scaleY(1); opacity: 0; } }
+  body.night #hint { color: #7fa48c; }
+
+  /* station cards */
+  .card { position: fixed; z-index: 16; left: clamp(16px, 3.4vw, 48px); top: 50%; width: min(400px, calc(100vw - 32px)); background: rgba(255,255,255,.93); backdrop-filter: blur(14px); border: 1px solid var(--line); border-radius: 18px; padding: 24px 24px 22px; box-shadow: 0 30px 60px -36px rgba(10,30,18,.35); opacity: 0; pointer-events: none; transform: translateY(-50%); }
+  .card:not(.dark) { border-color: #d6d8d4; box-shadow: 0 30px 60px -30px rgba(10,30,18,.45), 0 2px 10px rgba(10,30,18,.06); }
+  .card.on { pointer-events: auto; }
+  .card .k { font: 500 11.5px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--brand); display: flex; align-items: center; gap: 8px; }
+  .card .k b { width: 7px; height: 7px; border-radius: 50%; background: var(--brand-light); display: inline-block; }
+  .card h2 { margin: 0; font-size: 27px; line-height: 1.08; letter-spacing: -0.025em; font-weight: 800; }
+  .card p { margin: 12px 0 0; font-size: 15px; line-height: 1.55; color: #3a3a3a; }
+  .card .meta { margin-top: 14px; font: 500 12px var(--mono); color: var(--muted); }
+  .card .row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+  .btn { font: 700 14px var(--sans); border: 0; border-radius: 999px; padding: 11px 17px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; background: var(--ink); color: #fff; }
+  .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+  .btn.ghost:hover { border-color: var(--ink); }
+  .btn:focus, nav button:focus, #scrub button:focus { outline: none; }
+  .btn:focus-visible, nav button:focus-visible, #scrub button:focus-visible, .card .mini button:focus-visible { outline: 2px solid var(--brand-light); outline-offset: 3px; }
+  .btn svg { width: 12px; height: 12px; }
+  .card .mini { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; }
+  .card .mini button { text-align: left; font: 600 13px var(--sans); background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; cursor: pointer; }
+  .card .mini button span { display: block; font: 500 11px var(--mono); color: var(--muted); margin-top: 3px; }
+  .card .mini button:hover { border-color: var(--ink); }
+  .card.dark { background: rgba(18,20,19,.92); border-color: rgba(255,255,255,.08); color: #f2f2ef; }
+  .card.dark p { color: #c9cbc8; }
+  .card.dark .k { color: #7fd197; }
+  .card.dark .btn { background: #fff; color: var(--ink); }
+  .card.dark .btn.ghost { background: transparent; color: #f2f2ef; border-color: rgba(255,255,255,.2); }
+  .card.cta { background: rgba(13,20,16,.95); border-color: rgba(42,163,76,.55); box-shadow: 0 34px 70px -30px rgba(6,20,11,.6), 0 0 0 4px rgba(42,163,76,.12); }
+
+  /* scrubber */
+  #scrub { position: fixed; z-index: 17; right: clamp(14px, 2.6vw, 34px); top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 10px; }
+  #scrub button { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid #b9bdb9; background: transparent; padding: 0; cursor: pointer; position: relative; }
+  #scrub button.on { background: var(--brand); border-color: var(--brand); }
+  #scrub button:hover::after { content: attr(data-l); position: absolute; right: 18px; top: 50%; transform: translateY(-50%); white-space: nowrap; font: 600 12px var(--sans); background: var(--ink); color: #fff; padding: 4px 8px; border-radius: 6px; }
+
+  /* lightbox + index */
+  .sheet { position: fixed; inset: 0; z-index: 40; display: none; align-items: center; justify-content: center; background: rgba(6,9,7,.88); backdrop-filter: blur(6px); padding: 24px; }
+  .sheet.on { display: flex; }
+  .sheet video { max-width: min(1280px, 100%); max-height: 86vh; border-radius: 12px; background: #000; }
+  .sheet video:focus { outline: none; }
+  .sheet .ig { right: 96px; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; }
+  .sheet .ig[hidden] { display: none; }
+  .sheet .ig i { width: 18px; height: 18px; border-radius: 5px; background: linear-gradient(45deg, #feda75, #fa7e1e 30%, #d62976 62%, #4f5bd5); position: relative; }
+  .sheet .ig i::before { content: ""; position: absolute; inset: 3.5px; border: 1.8px solid #fff; border-radius: 4px; }
+  .sheet .ig i::after { content: ""; position: absolute; left: 6px; top: 6px; width: 6px; height: 6px; border: 1.8px solid #fff; border-radius: 50%; box-sizing: border-box; }
+  .sheet .x:focus { outline: none; }
+  .sheet .x:focus-visible { outline: 2px solid var(--brand-light); outline-offset: 3px; }
+  .sheet .keys { position: absolute; left: 0; right: 0; bottom: 16px; text-align: center; font: 500 12px var(--mono); color: #8fa596; pointer-events: none; }
+  .sheet .keys b { font-weight: 700; color: #e9f3ec; }
+  @media (hover: none) { .sheet .keys { display: none; } }
+  .sheet .snd { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 10px; font: 800 16px var(--sans); background: var(--brand); color: #fff; border: 0; border-radius: 999px; padding: 10px 18px; cursor: pointer; box-shadow: 0 6px 22px rgba(0,0,0,.4); }
+  .sheet .snd[hidden] { display: none; }
+  .sheet .snd:focus { outline: none; }
+  .sheet .x { position: absolute; top: 16px; right: 18px; font: 700 14px var(--sans); background: #fff; color: var(--ink); border: 0; border-radius: 999px; padding: 9px 14px; cursor: pointer; }
+  #index .list { background: #fff; border-radius: 18px; padding: 26px; width: min(760px, 100%); max-height: 86vh; overflow: auto; }
+  #index h3 { margin: 0 0 6px; font-size: 13px; font-family: var(--mono); font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  #index .grp { margin: 18px 0 8px; }
+  #index .it { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 12px 0; border-top: 1px solid var(--line); }
+  #index .it b { font-size: 16px; }
+  #index .it span { display: block; color: var(--muted); font-size: 13px; margin-top: 2px; }
+
+  @media (max-width: 860px) {
+    .card { top: auto; bottom: 14px; transform: none; padding: 18px 18px 16px; border-radius: 16px; }
+    .card h2 { font-size: 22px; }
+    .card p { font-size: 14px; }
+    #scrub { display: none; }
+    nav button.opt { display: none; }
+    #hero { bottom: 64px; }
+  }
+  @media (max-width: 560px) { .who span { display: none; } }
+  @media (prefers-reduced-motion: reduce) { #hint i { animation: none; } }
+</style>
+</head>
+<body class="night">
+  <div id="stage">
+    <div id="cam">
+      <svg id="world"><g id="worldG"></g></svg>
+      <div id="screens"></div>
+      <svg id="mid"><g id="midG"></g></svg>
+      <div id="dark"></div>
+      <svg id="fx"><defs><filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><g id="fxG"></g></svg>
+    </div>
+  </div>
+
+  <header>
+    <a class="who" href="#" data-go="0">Daksh Pansuriya<span>for SRCo Academy</span></a>
+    <nav>
+      <button class="opt" data-st="ohms">Made for you</button>
+      <button class="opt" data-st="hrt">Best work</button>
+      <button data-st="contact">Contact</button>
+      <button id="openIndex">Index</button>
+    </nav>
+  </header>
+
+  <div id="hero">
+    <h1>Daksh Pansuriya</h1>
+    <p>Editing, motion graphics, 3D and sound. Everything here, robot included, is drawn live in code. Scroll to follow the robot.</p>
+  </div>
+  <div id="hint"><i></i>scroll</div>
+
+  <div id="cards"></div>
+  <div id="scrub"></div>
+  <div id="track"></div>
+
+  <div class="sheet" id="player"><a class="x ig" id="playerIg" href="#" target="_blank" rel="noopener" data-insta hidden><i></i>Open in Instagram ↗</a><button class="x" data-close>Close</button><video controls playsinline></video><button class="snd" id="playerSnd" hidden><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z" fill="currentColor"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>Tap for sound</button><div class="keys"><b>Space</b> pause · <b>M</b> mute · <b>F</b> full screen · <b>← →</b> skip · <b>Esc</b> close</div></div>
+  <div class="sheet" id="index"><button class="x" data-close>Close</button><div class="list"></div></div>
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <script type="module" src="world.js"></script>
+</body>
+</html>

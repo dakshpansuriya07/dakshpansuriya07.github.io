@@ -773,6 +773,12 @@ async function main() {
     return { el, o: -1 };
   });
   document.addEventListener("click", (e) => {
+    // a film opened from a link waits for one click anywhere on the player, then plays from the start with sound
+    if (!$("#playerGo").hidden && e.target.closest("#player") && !e.target.closest("[data-close], #playerIg")) {
+      e.preventDefault();
+      playWithSound();
+      return;
+    }
     const b = e.target.closest("[data-play]");
     if (b) openPlayer(b.dataset.play);
     const g = e.target.closest("[data-go]");
@@ -786,11 +792,6 @@ async function main() {
     if (ig && !HRT_INSTA) {
       e.preventDefault();
       toast("Instagram link coming soon");
-    }
-    if (e.target.closest("#playerSnd")) {
-      const v = $("#player video");
-      v.muted = false;
-      v.play().catch(() => {});
     }
     const plq = e.target.closest(".plq");
     if (plq) copyPlate(plq);
@@ -1375,8 +1376,9 @@ const openPlayer = (src, fromLink = false) => {
   // the Watch button keeps focus otherwise, and Space would press it again instead of pausing
   document.activeElement?.blur?.();
   v.src = src;
+  v.poster = src.replace(/\.mp4$/, ".jpg");
   v.muted = false;
-  $("#playerSnd").hidden = true;
+  $("#playerGo").hidden = true;
   // films that also live on Instagram get a button to open the original post
   const ig = $("#playerIg");
   ig.hidden = !INSTA_FOR[src];
@@ -1384,12 +1386,16 @@ const openPlayer = (src, fromLink = false) => {
   $("#player").classList.add("on");
   v.focus({ preventScroll: true });
   v.play().catch(() => {
-    // a page opened from a link may not start with sound: play muted and offer the sound instead
-    if (!fromLink) return;
-    v.muted = true;
-    $("#playerSnd").hidden = false;
-    v.play().catch(() => {});
+    // browsers won't start a film with sound before the first click on the page, so wait for that click rather than play it muted
+    if (fromLink) $("#playerGo").hidden = false;
   });
+};
+const playWithSound = () => {
+  const v = $("#player video");
+  $("#playerGo").hidden = true;
+  v.muted = false;
+  v.currentTime = 0;
+  v.play().catch(() => {});
 };
 const closeSheets = () => {
   const fromPlayer = $("#player").classList.contains("on");
@@ -1400,16 +1406,15 @@ const closeSheets = () => {
   v.blur();
   if (fromPlayer) {
     v.removeAttribute("src");
+    v.removeAttribute("poster");
     v.load();
   }
   if (fromPlayer && backToIndex) $("#index").classList.add("on");
   backToIndex = false;
-  $("#playerSnd").hidden = true;
+  $("#playerGo").hidden = true;
   if (fromPlayer && WATCH) history.replaceState(null, "", location.pathname);
 };
-$("#player video").addEventListener("volumechange", (e) => {
-  if (!e.target.muted) $("#playerSnd").hidden = true;
-});
+$("#player video").addEventListener("play", () => ($("#playerGo").hidden = true));
 
 main();
 if (WATCH && stopOf(WATCH) >= 0) openPlayer(WATCH, true);

@@ -1385,10 +1385,9 @@ const openPlayer = (src, fromLink = false) => {
   ig.href = HRT_INSTA || "#";
   $("#player").classList.add("on");
   v.focus({ preventScroll: true });
-  v.play().catch(() => {
-    // browsers won't start a film with sound before the first click on the page, so wait for that click rather than play it muted
-    if (fromLink) $("#playerGo").hidden = false;
-  });
+  // a film opened from a link always waits for a click: browsers block sound before one, and a tab opened in the background must stay silent
+  if (fromLink) $("#playerGo").hidden = false;
+  else v.play().catch(() => {});
 };
 const playWithSound = () => {
   const v = $("#player video");
@@ -1412,9 +1411,17 @@ const closeSheets = () => {
   if (fromPlayer && backToIndex) $("#index").classList.add("on");
   backToIndex = false;
   $("#playerGo").hidden = true;
+  if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "none";
   if (fromPlayer && WATCH) history.replaceState(null, "", location.pathname);
 };
-$("#player video").addEventListener("play", () => ($("#playerGo").hidden = true));
+// sound only ever comes from the open player in a visible tab: a media key, reconnecting headphones or a background tab can't start it
+$("#player video").addEventListener("play", (e) => {
+  if (!$("#player").classList.contains("on") || document.hidden) e.target.pause();
+  else $("#playerGo").hidden = true;
+});
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) $("#player video").pause();
+});
 
 main();
 if (WATCH && stopOf(WATCH) >= 0) openPlayer(WATCH, true);

@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Daksh Pansuriya · Explainers built in code</title>
+<meta name="description" content="Daksh Pansuriya designs and animates technical explainers in code: Remotion, React and TypeScript, plus HTML/GSAP and Blender when a piece needs it.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4f2ed;
+    --paper: #fbfaf7;
+    --ink: #17160f;
+    --muted: #6b685f;
+    --faint: #a29e93;
+    --line: #dcd8ce;
+    --mark: #e4572e;
+    --head: "Bricolage Grotesque", "Inter", system-ui, sans-serif;
+    --body: "Inter", system-ui, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, monospace;
+    --wrap: 1180px;
+    --gutter: clamp(16px, 4vw, 40px);
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 400 17px/1.6 var(--body); }
+  a { color: inherit; }
+  img, video { display: block; max-width: 100%; }
+  .wrap { max-width: var(--wrap); margin: 0 auto; padding: 0 var(--gutter); }
+  .mono { font-family: var(--mono); font-size: 13px; letter-spacing: 0.01em; }
+
+  /* top bar */
+  .bar { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 22px 0; }
+  .bar b { font: 700 18px/1 var(--head); letter-spacing: -0.01em; }
+  .bar nav { display: flex; gap: 22px; }
+  .bar nav a { text-decoration: none; color: var(--muted); font-size: 15px; }
+  .bar nav a:hover { color: var(--ink); }
+
+  /* hero */
+  .hero { padding: clamp(40px, 9vw, 110px) 0 28px; }
+  .hero h1 { font: 800 clamp(44px, 8.4vw, 112px)/0.93 var(--head); letter-spacing: -0.035em; margin: 0 0 28px; max-width: none; }
+  .hero h1 em { font-style: normal; color: var(--mark); white-space: nowrap; }
+  .hero p.lede { font-size: clamp(18px, 2.1vw, 22px); line-height: 1.5; max-width: 40ch; margin: 0 0 30px; color: #2b2a24; }
+  .facts { display: flex; flex-wrap: wrap; gap: 8px 22px; color: var(--muted); margin: 0 0 34px; padding: 0; list-style: none; }
+  .facts li::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--mark); margin-right: 9px; vertical-align: 2px; }
+  .cta { display: flex; flex-wrap: wrap; gap: 12px; }
+  .btn { display: inline-flex; align-items: center; gap: 10px; padding: 13px 20px; border-radius: 999px; text-decoration: none; font-weight: 600; font-size: 15px; border: 1.5px solid var(--ink); }
+  .btn.solid { background: var(--ink); color: var(--bg); }
+  .btn:hover { transform: translateY(-1px); }
+
+  /* a timeline ruler with a playhead, the one decorative device on the page */
+  .ruler { position: relative; height: 34px; margin: 56px 0 0; border-top: 1px solid var(--ink);
+    background:
+      repeating-linear-gradient(90deg, var(--ink) 0 1px, transparent 1px 60px) top left / 100% 12px no-repeat,
+      repeating-linear-gradient(90deg, var(--faint) 0 1px, transparent 1px 12px) top left / 100% 6px no-repeat; }
+  .ruler .tc { position: absolute; top: 14px; font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .ruler .head { position: absolute; top: -9px; left: 38%; width: 2px; height: 42px; background: var(--mark); }
+  .ruler .head::before { content: ""; position: absolute; top: 0; left: -6px; border: 7px solid transparent; border-top: 9px solid var(--mark); }
+
+  section { padding: clamp(56px, 8vw, 96px) 0 0; }
+  .label { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--line); padding-bottom: 14px; margin-bottom: 36px; }
+  .label h2 { font: 700 clamp(26px, 3.4vw, 38px)/1.05 var(--head); letter-spacing: -0.02em; margin: 0; }
+  .label span { color: var(--muted); }
+
+  /* work */
+  .work { display: grid; gap: clamp(56px, 7vw, 88px); }
+  .piece .frame { background: #000; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 0 rgba(0,0,0,.04), 0 18px 40px -24px rgba(23,22,15,.45); }
+  .piece video { width: 100%; height: 100%; object-fit: cover; background: #000; }
+  .wide .frame { aspect-ratio: 16 / 9; }
+  .piece .top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; margin: 22px 0 14px; }
+  .piece .num { font-family: var(--mono); font-size: 13px; color: var(--mark); }
+  .piece h3 { font: 700 clamp(24px, 2.6vw, 30px)/1.1 var(--head); letter-spacing: -0.02em; margin: 0; }
+  .piece .spec { color: var(--muted); margin-left: auto; }
+  .piece .what { font-size: 18px; margin: 0 0 18px; max-width: 62ch; }
+  .cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px 32px; }
+  .cols div { border-top: 1px solid var(--line); padding-top: 12px; }
+  .cols h4 { font: 500 12px/1 var(--mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 0 0 8px; }
+  .cols p { margin: 0; font-size: 15.5px; line-height: 1.55; }
+  .tag { display: inline-block; font: 500 11px/1 var(--mono); text-transform: uppercase; letter-spacing: 0.08em; padding: 5px 8px; border-radius: 4px; background: #ebe7de; color: var(--muted); }
+
+  .tall { display: grid; grid-template-columns: minmax(0, 360px) minmax(0, 1fr); gap: clamp(24px, 4vw, 56px); align-items: start; }
+  .tall .frame { aspect-ratio: 9 / 16; }
+  .tall .top { margin-top: 0; }
+  .tall .cols { grid-template-columns: 1fr; }
+
+  .pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(24px, 3vw, 40px); }
+  .pair .frame { aspect-ratio: 16 / 9; }
+  .pair .what { font-size: 16px; }
+
+  /* in progress */
+  .kit { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: clamp(22px, 4vw, 40px); }
+  .kit p { max-width: 62ch; margin: 0 0 24px; }
+  .slots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+  .slot { aspect-ratio: 16 / 9; border: 1.5px dashed var(--faint); border-radius: 10px; display: flex; flex-direction: column; justify-content: flex-end; padding: 18px; gap: 6px;
+    background: repeating-linear-gradient(-45deg, transparent 0 14px, rgba(23,22,15,.035) 14px 15px); }
+  .slot b { font: 700 19px/1.15 var(--head); letter-spacing: -0.01em; }
+  .slot span { color: var(--muted); }
+  .demo { margin: 0; }
+  .demo .frame { aspect-ratio: 16 / 9; background: #fff; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .demo video { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .demo figcaption { display: flex; flex-direction: column; gap: 6px; padding-top: 12px; }
+  .demo figcaption span { color: var(--muted); }
+  .demo figcaption b { font: 700 19px/1.15 var(--head); letter-spacing: -0.01em; }
+
+  /* process */
+  .steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; margin-top: -36px; }
+  .steps li { padding: 22px 26px 26px 0; border-bottom: 1px solid var(--line); }
+  .steps li:nth-child(3n+2), .steps li:nth-child(3n+3) { padding-left: 26px; border-left: 1px solid var(--line); }
+  .steps .mono { color: var(--mark); }
+  .steps h4 { font: 700 21px/1.15 var(--head); margin: 8px 0 8px; letter-spacing: -0.01em; }
+  .steps p { margin: 0; font-size: 15.5px; color: #3a3830; }
+  .ai { display: grid; grid-template-columns: minmax(0, 220px) minmax(0, 1fr); gap: 24px 40px; margin-top: 44px; }
+  .ai h3 { font: 700 21px/1.2 var(--head); margin: 0; }
+  .ai p { margin: 0; max-width: 64ch; }
+
+  /* contact */
+  .contact { padding-bottom: 40px; }
+  .contact .big { font: 800 clamp(34px, 6.4vw, 80px)/1 var(--head); letter-spacing: -0.035em; margin: 0 0 26px; max-width: 14ch; }
+  .contact .mail { font: 700 clamp(20px, 3.2vw, 34px)/1.2 var(--head); letter-spacing: -0.01em; text-decoration-thickness: 2px; text-underline-offset: 6px; text-decoration-color: var(--mark); overflow-wrap: anywhere; }
+  .contact ul { list-style: none; padding: 0; margin: 26px 0 0; display: flex; flex-wrap: wrap; gap: 10px 28px; color: var(--muted); }
+
+  footer { border-top: 1px solid var(--line); margin-top: 72px; padding: 22px 0 40px; color: var(--muted); font-size: 13px; line-height: 1.6; }
+  footer p { margin: 0 0 8px; max-width: 110ch; }
+
+  @media (max-width: 860px) {
+    .cols { grid-template-columns: 1fr; gap: 14px; }
+    .tall { grid-template-columns: 1fr; }
+    .tall .frame { max-width: 340px; margin: 0 auto; }
+    .tall .top { margin-top: 22px; }
+    .pair, .slots { grid-template-columns: 1fr; }
+    .steps { grid-template-columns: 1fr; }
+    .steps li, .steps li:nth-child(3n+2), .steps li:nth-child(3n+3) { padding: 20px 0; border-left: 0; }
+    .ai { grid-template-columns: 1fr; }
+    .piece .spec { margin-left: 0; width: 100%; }
+    .bar nav { gap: 16px; }
+  }
+  @media (max-width: 420px) {
+    .bar nav a:first-child { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { .btn:hover { transform: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="bar">
+    <b>Daksh Pansuriya</b>
+    <nav><a href="#work">Work</a><a href="#process">Process</a><a href="#contact">Contact</a></nav>
+  </header>
+
+  <div class="hero">
+    <h1>Technical<br>explainers,<br><em>built in code.</em></h1>
+    <p class="lede">I design and animate short explainers in Remotion, React and TypeScript, and in HTML/GSAP or Blender when a piece needs it. Every shot is timed to the narration in code, so revisions after technical review take minutes and nothing drifts out of sync.</p>
+    <ul class="facts mono">
+      <li>Based in India · remote, async</li>
+      <li>2D diagrams, isometric, 3D from code</li>
+      <li>Source delivered in your repo</li>
+    </ul>
+    <div class="cta">
+      <a class="btn solid" href="mailto:dakshpansuriya07@gmail.com">Email me</a>
+      <a class="btn" href="https://github.com/dakshpansuriya07">GitHub</a>
+    </div>
+    <div class="ruler" aria-hidden="true">
+      <span class="tc" style="left:0">00:00</span><span class="tc" style="left:25%">00:15</span><span class="tc" style="left:50%">00:30</span><span class="tc" style="left:75%">00:45</span>
+      <span class="head"></span>
+    </div>
+  </div>
+
+  <section id="work">
+    <div class="label"><h2>Selected work</h2><span class="mono">2026</span></div>
+    <div class="work">
+
+      <article class="piece wide">
+        <div class="frame"><video controls preload="none" playsinline poster="assets/receipt.jpg"><source src="assets/receipt.mp4" type="video/mp4"></video></div>
+        <div class="top"><span class="num">01</span><h3>The Receipt</h3><span class="spec mono">16:9 · YouTube · 3:38 film, first 1:15 shown</span></div>
+        <p class="what">Why AI's compute bill can't keep multiplying. A till receipt for one training run starts printing and never stops; each line item unfolds into a small illustrated scene.</p>
+        <div class="cols">
+          <div><h4>My part</h4><p>Research and script, every number sourced. Illustration drawn as SVG in code, animation keyed to the voice, sound and mix.</p></div>
+          <div><h4>Craft</h4><p>One persistent object and a continuous camera instead of cuts. Totals roll like slot-machine digits.</p></div>
+          <div><h4>Tools</h4><p>HyperFrames (HTML, CSS, GSAP), SVG, synthetic narration (Kokoro), ffmpeg.</p></div>
+        </div>
+      </article>
+
+      <article class="piece tall">
+        <div class="frame"><video controls preload="none" playsinline poster="assets/npfa-library.jpg"><source src="assets/npfa-library.mp4" type="video/mp4"></video></div>
+        <div>
+          <div class="top"><span class="num">02</span><h3>Never Pay for AI</h3><span class="spec mono">9:16 · Shorts · 0:38 excerpt</span></div>
+          <p class="what">A short on home AI supercomputers. This excerpt explains memory bandwidth with one picture: the model is a library, and the writer has to read every book through one door before each word.</p>
+          <div class="cols">
+            <div><h4>My part</h4><p>Script and metaphor, 3D library and hardware modelled from code, kinetic captions, the stat cards and the sound.</p></div>
+            <div><h4>Tools</h4><p>Blender (Python), Three.js, HyperFrames (GSAP), synthetic narration.</p></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="piece wide">
+        <div class="frame"><video controls preload="none" playsinline poster="assets/salt-hollow.jpg"><source src="assets/salt-hollow.mp4" type="video/mp4"></video></div>
+        <div class="top"><span class="num">03</span><h3>Salt Hollow</h3><span class="tag">Rough cut</span><span class="spec mono">16:9 · 0:39 · 27 shots</span></div>
+        <p class="what">A cartoon show open for an original foggy sea town, cut shot-for-shot to the timing of a classic 2012 TV-cartoon open. Original town, cast, logo and score.</p>
+        <div class="cols">
+          <div><h4>My part</h4><p>Character kit as layered, rig-ready SVG; painted backgrounds built from SVG filters; animation, edit to a bar-timed score, 25 sound effects.</p></div>
+          <div><h4>Craft</h4><p>Cuts snap to the score's downbeats, within a few frames of the reference timing.</p></div>
+          <div><h4>Tools</h4><p>HyperFrames (GSAP), SVG, Python for the cut grid; score made with ElevenLabs Music.</p></div>
+        </div>
+      </article>
+
+      <div class="pair">
+        <article class="piece">
+          <div class="frame"><video autoplay muted loop playsinline preload="metadata" poster="assets/turbofan.jpg"><source src="assets/turbofan.mp4" type="video/mp4"></video></div>
+          <div class="top"><span class="num">04</span><h3>X-ray turbofan</h3><span class="spec mono">0:06 loop</span></div>
+          <p class="what">A cutaway jet engine: glass shells, spinning stages, airflow. Every mesh and material is generated in Python, no downloaded models. A look study after a Veritasium hook, none of their assets used.</p>
+          <p class="mono" style="color:var(--muted);margin:0">Blender 5.1 · Python (bmesh) · Cycles</p>
+        </article>
+        <article class="piece">
+          <div class="frame"><video autoplay muted loop playsinline preload="metadata" poster="assets/tehri.jpg"><source src="assets/tehri.mp4" type="video/mp4"></video></div>
+          <div class="top"><span class="num">05</span><h3>Tehri Dam diorama</h3><span class="spec mono">0:08 loop</span></div>
+          <p class="what">A terrain diorama built straight from open elevation data and satellite imagery, so the valleys and the reservoir are where they really are.</p>
+          <p class="mono" style="color:var(--muted);margin:0">Blender · Python · Copernicus DEM · Sentinel&#8209;2</p>
+        </article>
+      </div>
+
+    </div>
+  </section>
+
+  <section id="kit">
+    <div class="kit">
+      <div class="label" style="margin-bottom:22px"><h2>Open source: explainer-kit</h2><span class="mono">Remotion · TypeScript · MIT</span></div>
+      <p>A kit for narrated technical explainers in Remotion: cues keyed to spoken words, a continuous camera with zoom eased in log space, captions, labels and isometric solids. Both clips below are its demos, built and timed entirely in code.</p>
+      <div class="slots">
+        <figure class="demo">
+          <div class="frame"><video controls preload="none" playsinline poster="assets/pwm.jpg"><source src="assets/pwm.mp4" type="video/mp4"></video></div>
+          <figcaption><span class="mono">2D diagram · 0:26</span><b>PWM: how a controller slows a motor</b></figcaption>
+        </figure>
+        <figure class="demo">
+          <div class="frame"><video controls preload="none" playsinline poster="assets/cells.jpg"><source src="assets/cells.mp4" type="video/mp4"></video></div>
+          <figcaption><span class="mono">Isometric · 0:16</span><b>Battery cells in series</b></figcaption>
+        </figure>
+      </div>
+      <p class="mono" style="margin:18px 0 0"><a href="https://github.com/dakshpansuriya07/explainer-kit">github.com/dakshpansuriya07/explainer-kit</a></p>
+    </div>
+  </section>
+
+  <section id="process">
+    <div class="label"><h2>How I work</h2><span class="mono">script → render</span></div>
+    <ol class="steps">
+      <li><span class="mono">01</span><h4>Script</h4><p>One idea per clip, said in plain words. Every number is sourced and flagged for your technical review.</p></li>
+      <li><span class="mono">02</span><h4>Storyboard</h4><p>A shot list of what moves and when, agreed before any animation.</p></li>
+      <li><span class="mono">03</span><h4>Build in code</h4><p>Reusable components, a camera that moves continuously, each cue keyed to a spoken word.</p></li>
+      <li><span class="mono">04</span><h4>Voice and sound</h4><p>Narration, one sound per action, mixed to a broadcast-safe −16 LUFS.</p></li>
+      <li><span class="mono">05</span><h4>Review in preview</h4><p>You scrub a live preview and leave notes. Fixes are code changes, not re-exports.</p></li>
+      <li><span class="mono">06</span><h4>Render once</h4><p>One final MP4, plus the source in your repo with clean commits.</p></li>
+    </ol>
+    <div class="ai">
+      <h3>Where AI fits</h3>
+      <p>I use AI tools where they make me faster: a coding assistant, synthetic voices, first drafts of research. I direct every piece and review it frame by frame: what to show, how it moves, when it lands, and whether the facts hold up. Nothing ships that I haven't checked and can explain.</p>
+    </div>
+  </section>
+
+  <section id="contact" class="contact">
+    <div class="label"><h2>Contact</h2><span class="mono">IST · UTC+5:30</span></div>
+    <p class="big">Got something that needs explaining?</p>
+    <a class="mail" href="mailto:dakshpansuriya07@gmail.com">dakshpansuriya07@gmail.com</a>
+    <ul class="mono">
+      <li><a href="https://github.com/dakshpansuriya07">github.com/dakshpansuriya07</a></li>
+      <li>Per-clip or retainer</li>
+    </ul>
+  </section>
+
+  <footer>
+    <p>Tehri Dam diorama: produced using Copernicus WorldDEM-30 © DLR e.V. 2010-2014 and © Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union and ESA; all rights reserved. Imagery: Sentinel-2 cloudless, https://s2maps.eu by EOX IT Services GmbH (contains modified Copernicus Sentinel data 2016), CC BY 4.0.</p>
+    <p>© 2026 Daksh Pansuriya</p>
+  </footer>
+</div>
+</body>
+</html>
